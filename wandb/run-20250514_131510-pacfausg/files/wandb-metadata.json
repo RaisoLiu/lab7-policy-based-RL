@@ -1,0 +1,42 @@
+{
+  "os": "Linux-5.15.0-136-generic-x86_64-with-glibc2.35",
+  "python": "CPython 3.10.12",
+  "startedAt": "2025-05-14T13:15:10.876285Z",
+  "args": [
+    "--count",
+    "100"
+  ],
+  "program": "/home/raiso/lab7-policy-based-RL/sweep_a2c.py",
+  "codePath": "sweep_a2c.py",
+  "email": "rainsoon717@gmail.com",
+  "root": "/home/raiso/lab7-policy-based-RL",
+  "host": "raiso-nang-dorm",
+  "executable": "/home/raiso/lab7-policy-based-RL/.venv/bin/python3",
+  "codePathLocal": "sweep_a2c.py",
+  "cpu_count": 10,
+  "cpu_count_logical": 16,
+  "gpu": "NVIDIA GeForce RTX 4090",
+  "gpu_count": 1,
+  "disk": {
+    "/": {
+      "total": "1838679003136",
+      "used": "1264404201472"
+    }
+  },
+  "memory": {
+    "total": "67226423296"
+  },
+  "cpu": {
+    "count": 10,
+    "countLogical": 16
+  },
+  "gpu_nvidia": [
+    {
+      "name": "NVIDIA GeForce RTX 4090",
+      "memoryTotal": "25757220864",
+      "cudaCores": 16384,
+      "architecture": "Ada"
+    }
+  ],
+  "cudaVersion": "12.7"
+}
