@@ -1,0 +1,7 @@
+{"time":"2025-05-14T13:39:24.867145224Z","level":"INFO","msg":"stream: starting","core version":"0.19.11","symlink path":"/home/raiso/lab7-policy-based-RL/wandb/run-20250514_133924-tn1pz4zi/logs/debug-core.log"}
+{"time":"2025-05-14T13:39:25.177204499Z","level":"INFO","msg":"created new stream","id":"tn1pz4zi"}
+{"time":"2025-05-14T13:39:25.177298484Z","level":"INFO","msg":"stream: started","id":"tn1pz4zi"}
+{"time":"2025-05-14T13:39:25.177348757Z","level":"INFO","msg":"writer: Do: started","stream_id":"tn1pz4zi"}
+{"time":"2025-05-14T13:39:25.177519316Z","level":"INFO","msg":"sender: started","stream_id":"tn1pz4zi"}
+{"time":"2025-05-14T13:39:25.177523126Z","level":"INFO","msg":"handler: started","stream_id":"tn1pz4zi"}
+{"time":"2025-05-14T13:39:25.559680044Z","level":"INFO","msg":"Starting system monitor"}

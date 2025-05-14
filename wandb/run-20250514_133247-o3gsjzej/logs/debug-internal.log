@@ -1,0 +1,16 @@
+{"time":"2025-05-14T13:32:47.885108331Z","level":"INFO","msg":"stream: starting","core version":"0.19.11","symlink path":"/home/raiso/lab7-policy-based-RL/wandb/run-20250514_133247-o3gsjzej/logs/debug-core.log"}
+{"time":"2025-05-14T13:32:48.190442569Z","level":"INFO","msg":"created new stream","id":"o3gsjzej"}
+{"time":"2025-05-14T13:32:48.190504021Z","level":"INFO","msg":"stream: started","id":"o3gsjzej"}
+{"time":"2025-05-14T13:32:48.190576758Z","level":"INFO","msg":"writer: Do: started","stream_id":"o3gsjzej"}
+{"time":"2025-05-14T13:32:48.190660113Z","level":"INFO","msg":"sender: started","stream_id":"o3gsjzej"}
+{"time":"2025-05-14T13:32:48.19082013Z","level":"INFO","msg":"handler: started","stream_id":"o3gsjzej"}
+{"time":"2025-05-14T13:32:48.459439448Z","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-05-14T13:35:59.969731057Z","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-05-14T13:35:59.969764594Z","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-05-14T13:36:00.972607849Z","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"uploading output.log","runtime_seconds":0.125182325,"progress":"24.2KB/24.2KB"},{"desc":"uploading wandb-summary.json","runtime_seconds":0.125154625,"progress":"293B/293B"}],"total_operations":2}}
+{"time":"2025-05-14T13:36:01.504169745Z","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-05-14T13:36:02.154652914Z","level":"INFO","msg":"stream: closing","id":"o3gsjzej"}
+{"time":"2025-05-14T13:36:02.154685706Z","level":"INFO","msg":"handler: closed","stream_id":"o3gsjzej"}
+{"time":"2025-05-14T13:36:02.154708175Z","level":"INFO","msg":"writer: Close: closed","stream_id":"o3gsjzej"}
+{"time":"2025-05-14T13:36:02.154744598Z","level":"INFO","msg":"sender: closed","stream_id":"o3gsjzej"}
+{"time":"2025-05-14T13:36:02.154883199Z","level":"INFO","msg":"stream: closed","id":"o3gsjzej"}

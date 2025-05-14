@@ -1,0 +1,10 @@
+{"time":"2025-05-14T13:22:06.407416312Z","level":"INFO","msg":"stream: starting","core version":"0.19.11","symlink path":"/home/raiso/lab7-policy-based-RL/wandb/run-20250514_132206-zw7ayt3z/logs/debug-core.log"}
+{"time":"2025-05-14T13:22:06.71395477Z","level":"INFO","msg":"created new stream","id":"zw7ayt3z"}
+{"time":"2025-05-14T13:22:06.714352597Z","level":"INFO","msg":"stream: started","id":"zw7ayt3z"}
+{"time":"2025-05-14T13:22:06.714504054Z","level":"INFO","msg":"writer: Do: started","stream_id":"zw7ayt3z"}
+{"time":"2025-05-14T13:22:06.714508834Z","level":"INFO","msg":"sender: started","stream_id":"zw7ayt3z"}
+{"time":"2025-05-14T13:22:06.71469898Z","level":"INFO","msg":"handler: started","stream_id":"zw7ayt3z"}
+{"time":"2025-05-14T13:22:06.974182781Z","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-05-14T13:24:18.231818783Z","level":"INFO","msg":"stream: closing","id":"zw7ayt3z"}
+{"time":"2025-05-14T13:24:18.231836951Z","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-05-14T13:24:18.231896277Z","level":"INFO","msg":"Stopped system monitor"}

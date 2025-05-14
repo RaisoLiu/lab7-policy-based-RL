@@ -19,6 +19,11 @@ import argparse
 import wandb
 from tqdm import tqdm
 from typing import Tuple
+import os
+import yaml
+import datetime
+import json
+import csv
 
 def initialize_uniformly(layer: nn.Linear, init_w: float = 3e-3):
     """Initialize the weights and bias in [-init_w, init_w]."""
@@ -109,7 +114,7 @@ class A2CAgent:
         seed (int): random seed
     """
 
-    def __init__(self, env: gym.Env, args=None):
+    def __init__(self, env: gym.Env, args=None, is_test=False):
         """Initialize."""
         self.env = env
         self.gamma = args.discount_factor
@@ -117,13 +122,28 @@ class A2CAgent:
         self.seed = args.seed
         self.actor_lr = args.actor_lr
         self.critic_lr = args.critic_lr
-        self.num_episodes = args.num_episodes
+        self.num_episodes = getattr(args, 'num_episodes', 1000)
         
         # 設置網絡結構參數（如果有提供）
         self.actor_hidden_dim1 = getattr(args, 'actor_hidden_dim1', 128)
         self.actor_hidden_dim2 = getattr(args, 'actor_hidden_dim2', 64)
         self.critic_hidden_dim1 = getattr(args, 'critic_hidden_dim1', 128)
         self.critic_hidden_dim2 = getattr(args, 'critic_hidden_dim2', 64)
+        
+        # 設置保存相關參數
+        self.save_per_epoch = getattr(args, 'save_per_epoch', 100)  # 每隔多少個epoch保存一次
+        self.result_dir = getattr(args, 'result_dir', 'result-a2c_pendulum')
+        
+        # 創建實驗資料夾 (僅在非測試模式下)
+        self.is_test_mode = is_test
+        if not self.is_test_mode:
+            timestr = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+            self.exp_dir = os.path.join(self.result_dir, f"exp_{timestr}")
+            if not os.path.exists(self.exp_dir):
+                os.makedirs(self.exp_dir, exist_ok=True)
+            
+            # 保存配置
+            self.save_config(args)
         
         # device: cpu / gpu
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -232,8 +252,15 @@ class A2CAgent:
         """Train the agent."""
         self.is_test = False
         step_count = 0
+        best_score = -float('inf')
         
-        for ep in tqdm(range(1, self.num_episodes)): 
+        # 創建結果記錄文件
+        result_file = os.path.join(self.exp_dir, 'training_results.csv')
+        with open(result_file, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(['Episode', 'Score', 'Actor_Loss', 'Critic_Loss'])
+        
+        for ep in tqdm(range(1, int(self.num_episodes) + 1)): 
             actor_losses, critic_losses, scores = [], [], []
             state, _ = self.env.reset(seed=self.seed)
             score = 0
@@ -260,35 +287,173 @@ class A2CAgent:
                 # if episode ends
                 if done:
                     scores.append(score)
+                    avg_actor_loss = np.mean(actor_losses)
+                    avg_critic_loss = np.mean(critic_losses)
                     print(f"Episode {ep}: Total Reward = {score}")
+                    
+                    # 記錄結果
+                    with open(result_file, 'a', newline='') as f:
+                        writer = csv.writer(f)
+                        writer.writerow([ep, score, avg_actor_loss, avg_critic_loss])
+                    
                     # W&B logging
                     wandb.log({
                         "episode": ep,
-                        "return": score
-                        })  
+                        "return": score,
+                        "avg_actor_loss": avg_actor_loss,
+                        "avg_critic_loss": avg_critic_loss
+                        })
+                    
+                    # 保存檢查點
+                    if ep % self.save_per_epoch == 0:
+                        self.save_checkpoint(ep)
+                    
+                    # 保存最佳模型
+                    if score > best_score and not self.is_test_mode:
+                        best_score = score
+                        checkpoint = {
+                            'actor_state_dict': self.actor.state_dict(),
+                            'critic_state_dict': self.critic.state_dict(),
+                            'actor_optimizer': self.actor_optimizer.state_dict(),
+                            'critic_optimizer': self.critic_optimizer.state_dict(),
+                            'episode': ep,
+                            'score': best_score
+                        }
+                        torch.save(checkpoint, os.path.join(self.exp_dir, 'best_model.pt'))
+                        print(f"Saved best model with score {best_score} at episode {ep}")
+        
+        # 訓練結束後保存最終模型
+        if not self.is_test_mode:
+            self.save_checkpoint(int(self.num_episodes))
 
-    def test(self, video_folder: str):
+    def load_checkpoint(self, checkpoint_path):
+        """加載模型檢查點"""
+        if not os.path.exists(checkpoint_path):
+            raise ValueError(f"Checkpoint file not found: {checkpoint_path}")
+        
+        checkpoint = torch.load(checkpoint_path, map_location=self.device)
+        
+        # 加載模型參數
+        self.actor.load_state_dict(checkpoint['actor_state_dict'])
+        self.critic.load_state_dict(checkpoint['critic_state_dict'])
+        
+        # 加載優化器參數（可選）
+        if 'actor_optimizer' in checkpoint and 'critic_optimizer' in checkpoint:
+            self.actor_optimizer.load_state_dict(checkpoint['actor_optimizer'])
+            self.critic_optimizer.load_state_dict(checkpoint['critic_optimizer'])
+            
+        episode = checkpoint.get('episode', 0)
+        score = checkpoint.get('score', None)
+        
+        print(f"Loaded checkpoint from episode {episode}" + 
+              (f" with score {score}" if score is not None else ""))
+        
+        return episode, score
+
+    def test(self, video_folder=None, checkpoint_path=None, num_episodes=1):
         """Test the agent."""
         self.is_test = True
+        
+        if checkpoint_path:
+            self.load_checkpoint(checkpoint_path)
+        
+        if video_folder:
+            # 如果沒有提供視頻文件夾，創建一個
+            if not os.path.exists(video_folder):
+                os.makedirs(video_folder, exist_ok=True)
+                
+            tmp_env = self.env
+            self.env = gym.wrappers.RecordVideo(
+                self.env, 
+                video_folder=video_folder,
+                episode_trigger=lambda x: True  # 錄制所有episode
+            )
+        
+        scores = []
+        for ep in range(num_episodes):
+            state, _ = self.env.reset(seed=self.seed + ep)  # 使用不同的種子
+            done = False
+            score = 0
+            steps = 0
 
-        tmp_env = self.env
-        self.env = gym.wrappers.RecordVideo(self.env, video_folder=video_folder)
+            while not done:
+                action = self.select_action(state)
+                next_state, reward, done = self.step(action)
 
-        state, _ = self.env.reset(seed=self.seed)
-        done = False
-        score = 0
+                state = next_state
+                score += reward
+                steps += 1
 
-        while not done:
-            action = self.select_action(state)
-            next_state, reward, done = self.step(action)
+            scores.append(score)
+            print(f"Test Episode {ep+1}/{num_episodes}: Score = {score}, Steps = {steps}")
+        
+        # 保存結果到CSV
+        if video_folder:
+            result_file = os.path.join(video_folder, 'test_results.csv')
+            with open(result_file, 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(['Episode', 'Score'])
+                for i, score in enumerate(scores):
+                    writer.writerow([i+1, score])
+                    
+            # 保存統計摘要
+            summary_file = os.path.join(video_folder, 'test_summary.json')
+            summary = {
+                'mean_score': float(np.mean(scores)),
+                'std_score': float(np.std(scores)),
+                'min_score': float(np.min(scores)),
+                'max_score': float(np.max(scores)),
+                'median_score': float(np.median(scores)),
+                'num_episodes': num_episodes
+            }
+            with open(summary_file, 'w') as f:
+                json.dump(summary, f, indent=4)
+            
+            print(f"Test Summary: Mean Score = {summary['mean_score']:.2f} ± {summary['std_score']:.2f}")
+            
+            # 關閉記錄環境
+            self.env.close()
+            self.env = tmp_env
+        
+        return scores
 
-            state = next_state
-            score += reward
-
-        print("score: ", score)
-        self.env.close()
-
-        self.env = tmp_env
+    def save_config(self, args):
+        """保存配置到 YAML 文件"""
+        if self.is_test_mode:
+            return  # 在測試模式下跳過保存配置
+            
+        config = {
+            'actor_lr': self.actor_lr,
+            'critic_lr': self.critic_lr,
+            'discount_factor': self.gamma,
+            'entropy_weight': self.entropy_weight,
+            'seed': self.seed,
+            'num_episodes': self.num_episodes,
+            'actor_hidden_dim1': self.actor_hidden_dim1,
+            'actor_hidden_dim2': self.actor_hidden_dim2,
+            'critic_hidden_dim1': self.critic_hidden_dim1,
+            'critic_hidden_dim2': self.critic_hidden_dim2,
+            'save_per_epoch': self.save_per_epoch,
+        }
+        
+        with open(os.path.join(self.exp_dir, 'config.yaml'), 'w') as f:
+            yaml.dump(config, f, default_flow_style=False)
+            
+    def save_checkpoint(self, episode):
+        """保存模型檢查點"""
+        if self.is_test_mode:
+            return  # 在測試模式下跳過保存檢查點
+            
+        checkpoint = {
+            'actor_state_dict': self.actor.state_dict(),
+            'critic_state_dict': self.critic.state_dict(),
+            'actor_optimizer': self.actor_optimizer.state_dict(),
+            'critic_optimizer': self.critic_optimizer.state_dict(),
+            'episode': episode,
+        }
+        checkpoint_path = os.path.join(self.exp_dir, f'checkpoint_ep{episode}.pt')
+        torch.save(checkpoint, checkpoint_path)
+        print(f"Saved checkpoint at episode {episode} to {checkpoint_path}")
 
 def seed_torch(seed):
     torch.manual_seed(seed)
@@ -306,7 +471,18 @@ if __name__ == "__main__":
     parser.add_argument("--discount-factor", type=float, default=0.9)
     parser.add_argument("--num-episodes", type=float, default=5000)
     parser.add_argument("--seed", type=int, default=77)
-    parser.add_argument("--entropy-weight", type=int, default=1e-2) # entropy can be disabled by setting this to 0
+    parser.add_argument("--entropy-weight", type=float, default=1e-2) # entropy can be disabled by setting this to 0
+    
+    # 保存相關參數
+    parser.add_argument("--save-per-epoch", type=int, default=100, help="保存頻率（每多少個回合保存一次）")
+    parser.add_argument("--result-dir", type=str, default="result-a2c_pendulum", help="結果保存的基礎目錄")
+    
+    # 網絡相關參數
+    parser.add_argument("--actor-hidden-dim1", type=int, default=128)
+    parser.add_argument("--actor-hidden-dim2", type=int, default=64)
+    parser.add_argument("--critic-hidden-dim1", type=int, default=128)
+    parser.add_argument("--critic-hidden-dim2", type=int, default=64)
+    
     args = parser.parse_args()
     
     # environment

@@ -6,3 +6,12 @@
 {"time":"2025-05-14T13:15:11.191788078Z","level":"INFO","msg":"handler: started","stream_id":"pacfausg"}
 {"time":"2025-05-14T13:15:11.430611214Z","level":"INFO","msg":"Starting system monitor"}
 {"time":"2025-05-14T13:15:11.430756339Z","level":"ERROR","msg":"git repo not found","error":"repository does not exist"}
+{"time":"2025-05-14T13:18:32.437998199Z","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-05-14T13:18:32.43803927Z","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-05-14T13:18:33.389476121Z","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-05-14T13:18:33.440330373Z","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"uploading history steps 97516-100298, summary, console lines 487-500","runtime_seconds":0.043829649}],"total_operations":1}}
+{"time":"2025-05-14T13:18:33.724119486Z","level":"INFO","msg":"stream: closing","id":"pacfausg"}
+{"time":"2025-05-14T13:18:33.724150088Z","level":"INFO","msg":"handler: closed","stream_id":"pacfausg"}
+{"time":"2025-05-14T13:18:33.724165114Z","level":"INFO","msg":"writer: Close: closed","stream_id":"pacfausg"}
+{"time":"2025-05-14T13:18:33.724254293Z","level":"INFO","msg":"sender: closed","stream_id":"pacfausg"}
+{"time":"2025-05-14T13:18:33.724323258Z","level":"INFO","msg":"stream: closed","id":"pacfausg"}
