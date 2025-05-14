@@ -1,1 +1,0 @@
-{"episode":500,"avg_critic_loss":125.5345541756542,"critic loss":24152.876953125,"return":-1566.6330045028542,"actor loss":63.18722915649414,"_step":100499,"_runtime":192.083803855,"_wandb":{"runtime":192},"_timestamp":1.7472297599652643e+09,"step":100000,"avg_actor_loss":-0.5646580870135222}
