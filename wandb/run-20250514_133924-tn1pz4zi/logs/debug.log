@@ -21,3 +21,10 @@ config: {'_wandb': {'code_path': 'code/sweep_a2c.py'}}
 2025-05-14 13:39:25,813 INFO    Thread-10 (_run_job):1484881 [wandb_run.py:_redirect():2490] Wrapping output streams.
 2025-05-14 13:39:25,813 INFO    Thread-10 (_run_job):1484881 [wandb_run.py:_redirect():2513] Redirects installed.
 2025-05-14 13:39:25,813 INFO    Thread-10 (_run_job):1484881 [wandb_init.py:init():1150] run started, returning control to user process
+2025-05-14 13:42:38,483 INFO    Thread-10 (_run_job):1484881 [wandb_run.py:_finish():2321] finishing run rainsoon717/DLP-Lab7-A2C-Pendulum-Sweep/tn1pz4zi
+2025-05-14 13:42:38,483 INFO    Thread-10 (_run_job):1484881 [wandb_run.py:_atexit_cleanup():2538] got exitcode: 0
+2025-05-14 13:42:38,483 INFO    Thread-10 (_run_job):1484881 [wandb_run.py:_restore():2520] restore
+2025-05-14 13:42:38,483 INFO    Thread-10 (_run_job):1484881 [wandb_run.py:_restore():2526] restore done
+2025-05-14 13:42:40,492 INFO    Thread-10 (_run_job):1484881 [wandb_run.py:_footer_history_summary_info():4188] rendering history
+2025-05-14 13:42:40,493 INFO    Thread-10 (_run_job):1484881 [wandb_run.py:_footer_history_summary_info():4220] rendering summary
+2025-05-14 13:42:40,494 INFO    Thread-10 (_run_job):1484881 [wandb_run.py:_footer_sync_info():4149] logging synced files

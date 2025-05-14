@@ -1,0 +1,137 @@
+cuda
+  5%|██████▍                                                                                                                | 27/500 [00:10<03:00,  2.62it/s]
+Episode 1: Total Reward = -1571.8161079945744
+Saved best model with score -1571.8161079945744 at episode 1
+Episode 2: Total Reward = -1502.0646328518555
+Saved best model with score -1502.0646328518555 at episode 2
+Episode 3: Total Reward = -1580.3585624311172
+Episode 4: Total Reward = -1514.9191859438777
+Episode 5: Total Reward = -1602.72840637848
+Episode 6: Total Reward = -1534.3672625887782
+Episode 7: Total Reward = -1554.9630019072013
+Episode 8: Total Reward = -1520.612916756079
+Episode 9: Total Reward = -1636.6020932200329
+Episode 10: Total Reward = -1604.0329261744057
+Episode 11: Total Reward = -1512.2266640133498
+Episode 12: Total Reward = -1524.7010040120833
+Episode 13: Total Reward = -1554.5055434145318
+Episode 14: Total Reward = -1730.4903845373588
+Episode 15: Total Reward = -1543.5832217019404
+Episode 16: Total Reward = -1548.7578488021184
+Episode 17: Total Reward = -1471.1857071991224
+Saved best model with score -1471.1857071991224 at episode 17
+Episode 18: Total Reward = -1487.700531433669
+Episode 19: Total Reward = -1394.8103133799193
+Saved best model with score -1394.8103133799193 at episode 19
+Episode 20: Total Reward = -1721.4352089256358
+Episode 21: Total Reward = -1681.1664339415859
+Episode 22: Total Reward = -1649.8721103404723
+Episode 23: Total Reward = -1515.1686245381134
+Episode 24: Total Reward = -1567.9195867459666
+Episode 25: Total Reward = -1477.3844156644082
+Episode 26: Total Reward = -1495.567424513893
+Episode 27: Total Reward = -1658.8359675772
+Episode 28: Total Reward = -1630.192410595131
+Episode 29: Total Reward = -1525.400544466242
+Episode 30: Total Reward = -1535.3594199418303
+Episode 31: Total Reward = -1479.5500529907379
+Episode 32: Total Reward = -1625.4430044989535
+Episode 33: Total Reward = -1544.0898193640508
+Episode 34: Total Reward = -1563.2411813682195
+Episode 35: Total Reward = -1473.6475630955601
+Episode 36: Total Reward = -1577.0463479913728
+Episode 37: Total Reward = -1618.445201596837
+Episode 38: Total Reward = -1671.1600169343467
+Episode 39: Total Reward = -1653.6971441153814
+Episode 40: Total Reward = -1571.2905754597712
+Episode 41: Total Reward = -1530.6915367257336
+Episode 42: Total Reward = -1406.8018330864159
+Episode 43: Total Reward = -1458.4030074014952
+Episode 44: Total Reward = -1564.7436851259467
+Episode 45: Total Reward = -1442.5785451786974
+Episode 46: Total Reward = -1504.8601608283566
+Episode 47: Total Reward = -1483.2108864258596
+Episode 48: Total Reward = -1459.330609698801
+Episode 49: Total Reward = -1406.0003428789441
+Episode 50: Total Reward = -1593.0896980758077
+Episode 51: Total Reward = -1497.6602073785061
+Episode 52: Total Reward = -1446.5317319495484
+Episode 53: Total Reward = -1542.81244348697
+Episode 54: Total Reward = -1322.3983093425036
+Saved best model with score -1322.3983093425036 at episode 54
+Episode 55: Total Reward = -1388.83726191568
+Episode 56: Total Reward = -1423.1137158087636
+Episode 57: Total Reward = -1314.264153402984
+Saved best model with score -1314.264153402984 at episode 57
+Episode 58: Total Reward = -1486.561120125442
+Episode 59: Total Reward = -1473.9742757762262
+Episode 60: Total Reward = -1377.668380530416
+Episode 61: Total Reward = -1330.1608829451534
+Episode 62: Total Reward = -1235.3485342825263
+Saved best model with score -1235.3485342825263 at episode 62
+Episode 63: Total Reward = -1366.6405696197141
+Episode 64: Total Reward = -1597.3378414206697
+Episode 65: Total Reward = -1435.8873752127324
+Episode 66: Total Reward = -1373.5329560627379
+Episode 67: Total Reward = -1244.2025467008805
+Episode 68: Total Reward = -1206.2990085275687
+Saved best model with score -1206.2990085275687 at episode 68
+Episode 69: Total Reward = -1256.865801661443
+Episode 70: Total Reward = -1209.8892799931039
+Episode 71: Total Reward = -1298.3001536116196
+Episode 72: Total Reward = -1297.597727613214
+Episode 73: Total Reward = -1197.8180192493462
+Saved best model with score -1197.8180192493462 at episode 73
+Episode 74: Total Reward = -1230.9388694151935
+Episode 75: Total Reward = -1228.0775122128857
+Episode 76: Total Reward = -1362.3511541131397
+Episode 77: Total Reward = -1218.7887684075295
+Episode 78: Total Reward = -1260.7740432071907
+Episode 79: Total Reward = -1216.9640287038362
+Episode 80: Total Reward = -1223.4570493888682
+Episode 81: Total Reward = -1219.895584744884
+Episode 82: Total Reward = -1229.6205059532485
+Episode 83: Total Reward = -1107.5779158871223
+Saved best model with score -1107.5779158871223 at episode 83
+Episode 84: Total Reward = -1338.2450967786883
+Episode 85: Total Reward = -1338.7454803761398
+Episode 86: Total Reward = -1174.1814720193856
+Episode 87: Total Reward = -1222.1354904272819
+Episode 88: Total Reward = -1249.7180024703273
+Episode 89: Total Reward = -1147.4978216333216
+Episode 90: Total Reward = -1275.9347418330829
+Episode 91: Total Reward = -1217.3320494039485
+Episode 92: Total Reward = -1281.1045633363315
+Episode 93: Total Reward = -1257.2568272360184
+Episode 94: Total Reward = -1269.3214960868413
+Episode 95: Total Reward = -1258.745542501134
+Episode 96: Total Reward = -1274.7055115828375
+Episode 97: Total Reward = -1264.1878427900863
+Episode 98: Total Reward = -1164.6307930589826
+Episode 99: Total Reward = -1230.9054862150701
+Episode 100: Total Reward = -1247.7787302902477
+Saved checkpoint at episode 100 to result-a2c_pendulum_sweep/exp_20250514-134243/checkpoint_ep100.pt
+Episode 101: Total Reward = -1280.3941850084318
+Episode 102: Total Reward = -1210.5194961422512
+Episode 103: Total Reward = -1288.0469624841653
+Episode 104: Total Reward = -1262.8928714017777
+Episode 105: Total Reward = -1273.5717288845133
+Episode 106: Total Reward = -1233.4520170962282
+Episode 107: Total Reward = -1141.740171005228
+Episode 108: Total Reward = -1314.5914987841154
+Episode 109: Total Reward = -1228.2880264778414
+Episode 110: Total Reward = -1263.2033411476757
+Episode 111: Total Reward = -1278.9282208625182
+Episode 112: Total Reward = -1264.5477499157291
+Episode 113: Total Reward = -1246.352015682702
+Episode 114: Total Reward = -1261.6365899426335
+Episode 115: Total Reward = -1262.5350106221106
+Episode 116: Total Reward = -1261.8111341088702
+Episode 117: Total Reward = -1262.4072623082013
+Episode 118: Total Reward = -1249.2747598539572
+Episode 119: Total Reward = -1264.433683144196
+Episode 120: Total Reward = -1261.4675981051753
+Episode 121: Total Reward = -1277.586478696329
+Episode 122: Total Reward = -1303.675864425109
+Episode 123: Total Reward = -1293.307121323675
+Episode 124: Total Reward = -1244.516627451076
