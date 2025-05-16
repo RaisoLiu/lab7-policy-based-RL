@@ -55,13 +55,18 @@ def test_model(checkpoint_path, num_episodes=20, seed=77):
             self.actor_hidden_dim2 = config.get('actor_hidden_dim2', 64)
             self.critic_hidden_dim1 = config.get('critic_hidden_dim1', 128)
             self.critic_hidden_dim2 = config.get('critic_hidden_dim2', 64)
+            # 獎勵縮放和限制參數 (僅用於加載配置，測試時不會應用)
+            self.reward_scaling = config.get('reward_scaling', 0.1)
+            self.reward_clamp_min = config.get('reward_clamp_min', -1.0)
+            self.reward_clamp_max = config.get('reward_clamp_max', 1.0)
             # 覆蓋種子以使用命令行提供的值
             self.seed = seed
+            self.num_episodes = num_episodes
     
     args = Args(config)
     
     # 創建代理並加載檢查點
-    agent = A2CAgent(env, args, is_test=True)
+    agent = A2CAgent(env, args)
     agent.test(video_folder=test_dir, checkpoint_path=checkpoint_path, num_episodes=num_episodes)
     
     print(f"測試完成! 結果保存在 {test_dir}")

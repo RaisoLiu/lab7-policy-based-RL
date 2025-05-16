@@ -43,29 +43,14 @@ class Actor(nn.Module):
 
         ############TODO#############
         # Remeber to initialize the layer weights
-        self.log_std_min = log_std_min
-        self.log_std_max = log_std_max
-        self.model = nn.Sequential(
-            nn.Linear(in_dim, 128),
-            nn.Mish(),
-            nn.Linear(128, 128),
-            nn.Mish()
-        )
-        self.fc_mean = nn.Linear(128, out_dim)
-        self.fc_log_std = nn.Linear(128, out_dim)
+        
         #############################
 
     def forward(self, state: torch.Tensor) -> torch.Tensor:
         """Forward method implementation."""
         
         ############TODO#############
-        X = self.model(state)
-        mean = self.fc_mean(X)
-        log_std = self.fc_log_std(X)
-        std = torch.exp(log_std)
-        clamp_std = torch.clamp(std, min=self.log_std_min, max=self.log_std_max)
-        dist = torch.distributions.Normal(mean, clamp_std)
-        action = dist.sample()
+
         #############################
 
         return action, dist
@@ -78,20 +63,14 @@ class Critic(nn.Module):
 
         ############TODO#############
         # Remeber to initialize the layer weights
-        self.model = nn.Sequential(
-            nn.Linear(in_dim, 128),
-            nn.Mish(),
-            nn.Linear(128, 128),
-            nn.Mish(),
-            nn.Linear(128, 1),
-        )
+        
         #############################
 
     def forward(self, state: torch.Tensor) -> torch.Tensor:
         """Forward method implementation."""
         
         ############TODO#############
-        value = self.model(state)
+
         #############################
 
         return value
@@ -101,22 +80,7 @@ def compute_gae(
     """Compute gae."""
 
     ############TODO#############
-    gae_returns = []
-    gae = 0
-    
-    # 從後向前計算GAE
-    for r, m, v in zip(reversed(rewards), reversed(masks), reversed(values)):
-        # 計算TD誤差
-        delta = r + gamma * next_value * m - v
-        
-        # 更新GAE
-        gae = delta + gamma * tau * m * gae
-        
-        # 將GAE插入到列表開頭
-        gae_returns.insert(0, gae)
-        
-        # 更新next_value為當前值
-        next_value = v
+
     #############################
     return gae_returns
 
@@ -272,18 +236,12 @@ class PPOAgent:
             # actor_loss
             ############TODO#############
             # actor_loss = ?
-            surr1 = ratio * advantages
-            surr2 = torch.clamp(ratio, 1 - self.eps, 1 + self.eps) * advantages
-            actor_loss = -torch.min(surr1, surr2)
-
+            
             #############################
 
             # critic_loss
             ############TODO#############
             # critic_loss = ?
-            current_values = self.critic(states)
-            td_target = returns + self.gamma * self.critic(next_state) * (1 - done)
-            critic_loss = F.mse_loss(td_target, current_values)
 
             #############################
             
@@ -392,7 +350,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
  
     # environment
-    env = gym.make("Pendulum-v1")#, render_mode="rgb_array")
+    env = gym.make("Pendulum-v1", render_mode="rgb_array")
     seed = 77
     random.seed(seed)
     np.random.seed(seed)

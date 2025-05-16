@@ -19,47 +19,53 @@ import argparse
 import wandb
 from tqdm import tqdm
 from typing import Tuple
-import os
-import yaml
-import datetime
-import json
-import csv
 
-def initialize_uniformly(layer: nn.Linear, init_w: float = 3e-3):
+def initialize_uniformly(layer, init_w: float = 3e-3):
     """Initialize the weights and bias in [-init_w, init_w]."""
-    layer.weight.data.uniform_(-init_w, init_w)
-    layer.bias.data.uniform_(-init_w, init_w)
+    if isinstance(layer, nn.Linear):
+        layer.weight.data.uniform_(-init_w, init_w)
+        layer.bias.data.uniform_(-init_w, init_w)
+    elif isinstance(layer, nn.Sequential):
+        for module in layer:
+            if isinstance(module, nn.Linear):
+                module.weight.data.uniform_(-init_w, init_w)
+                module.bias.data.uniform_(-init_w, init_w)
+            elif isinstance(module, nn.Sequential):
+                initialize_uniformly(module, init_w)
 
 
 class Actor(nn.Module):
-    def __init__(self, in_dim: int, out_dim: int, hidden_dim1=128, hidden_dim2=64):
+    def __init__(self, in_dim: int, out_dim: int):
         """Initialize."""
         super(Actor, self).__init__()
+   
         
         ############TODO#############
         # Remeber to initialize the layer weights
-        self.fc1 = nn.Linear(in_dim, hidden_dim1)
-        self.fc2 = nn.Linear(hidden_dim1, hidden_dim2)
-        self.mu = nn.Linear(hidden_dim2, out_dim)
-        self.std = nn.Linear(hidden_dim2, out_dim)
+        self.model = nn.Sequential(
+            nn.Linear(in_dim, 64),
+            nn.Tanh(),
+            nn.Linear(64, 64),
+            nn.Tanh(),
+            nn.Linear(64, 64),
+            nn.Tanh(),
+        )
+        self.mu_layer = nn.Linear(64, out_dim)
+        self.std_layer = nn.Linear(64, out_dim)
+        initialize_uniformly(self.model)
+        initialize_uniformly(self.mu_layer)
+        initialize_uniformly(self.std_layer)
         
-        # Initialize weights
-        initialize_uniformly(self.fc1)
-        initialize_uniformly(self.fc2)
-        initialize_uniformly(self.mu)
-        initialize_uniformly(self.std)
         #############################
         
     def forward(self, state: torch.Tensor) -> torch.Tensor:
         """Forward method implementation."""
 
         ############TODO#############
-        x = F.relu(self.fc1(state))
-        x = F.relu(self.fc2(x))
-        
-        mu = self.mu(x)
-        std = F.softplus(self.std(x)) + 1e-3  # 確保標準差為正值
-        
+        x = self.model(state)
+        mu = self.mu_layer(x)
+        # 使用softplus或exp確保標準差為正值
+        std = F.softplus(self.std_layer(x)) + 1e-5  # 加上一個小值避免為零
         dist = Normal(mu, std)
         action = dist.sample()
         #############################
@@ -68,33 +74,72 @@ class Actor(nn.Module):
 
 
 class Critic(nn.Module):
-    def __init__(self, in_dim: int, hidden_dim1=128, hidden_dim2=64):
+    def __init__(self, in_dim: int):
         """Initialize."""
         super(Critic, self).__init__()
         
         ############TODO#############
         # Remeber to initialize the layer weights
-        self.fc1 = nn.Linear(in_dim, hidden_dim1)
-        self.fc2 = nn.Linear(hidden_dim1, hidden_dim2)
-        self.fc3 = nn.Linear(hidden_dim2, 1)
-        
-        # Initialize weights
-        initialize_uniformly(self.fc1)
-        initialize_uniformly(self.fc2)
-        initialize_uniformly(self.fc3)
+        self.model = nn.Sequential(
+            nn.Linear(in_dim, 64),
+            nn.Tanh(),
+            nn.Linear(64, 64),
+            nn.Tanh(),
+            nn.Linear(64, 1),
+        )
+        initialize_uniformly(self.model)
         #############################
 
     def forward(self, state: torch.Tensor) -> torch.Tensor:
         """Forward method implementation."""
         
         ############TODO#############
-        x = F.relu(self.fc1(state))
-        x = F.relu(self.fc2(x))
-        value = self.fc3(x)
+        x = self.model(state)
         #############################
 
-        return value
+        return x
     
+def discounted_rewards(rewards, dones, gamma):
+    ret = 0
+    discounted = []
+    for reward, done in zip(rewards[::-1], dones[::-1]):
+        ret = reward + ret * gamma * (1-done)
+        discounted.append(ret)
+    
+    return discounted[::-1]
+
+
+# state, log_prob, next_state, reward, done = process_memory(self.transition, self.gamma)
+def process_memory(memory, gamma=0.99, device="cpu"):
+    states = []
+    log_probs = []
+    next_states = []
+    rewards = []
+    dones = []
+
+
+    for it in memory:
+        state, log_prob, next_state, reward, done = it
+        log_probs.append(log_prob)
+        rewards.append(reward)
+        states.append(state)
+        next_states.append(next_state)
+        dones.append(done)
+    
+
+    rewards = discounted_rewards(rewards, dones, gamma)
+    log_probs = torch.stack(log_probs).view(-1, 1).to(device)
+    states = torch.stack(states).to(device)
+    next_states_arr    = np.stack(next_states, axis=0)  # shape = (16, 3)
+    next_states_tensor = torch.from_numpy(next_states_arr).to(device)
+
+    rewards = torch.tensor(rewards, dtype=torch.float32).view(-1, 1).to(device)
+    dones = torch.tensor(dones).view(-1, 1).to(device)
+    return states, log_probs, next_states_tensor, rewards, dones
+
+def clip_grad_norm_(module, max_grad_norm):
+    nn.utils.clip_grad_norm_([p for g in module.param_groups for p in g["params"]], max_grad_norm)
+
 
 class A2CAgent:
     """A2CAgent interacting with environment.
@@ -114,7 +159,7 @@ class A2CAgent:
         seed (int): random seed
     """
 
-    def __init__(self, env: gym.Env, args=None, is_test=False):
+    def __init__(self, env: gym.Env, args=None):
         """Initialize."""
         self.env = env
         self.gamma = args.discount_factor
@@ -122,28 +167,10 @@ class A2CAgent:
         self.seed = args.seed
         self.actor_lr = args.actor_lr
         self.critic_lr = args.critic_lr
-        self.num_episodes = getattr(args, 'num_episodes', 1000)
-        
-        # 設置網絡結構參數（如果有提供）
-        self.actor_hidden_dim1 = getattr(args, 'actor_hidden_dim1', 128)
-        self.actor_hidden_dim2 = getattr(args, 'actor_hidden_dim2', 64)
-        self.critic_hidden_dim1 = getattr(args, 'critic_hidden_dim1', 128)
-        self.critic_hidden_dim2 = getattr(args, 'critic_hidden_dim2', 64)
-        
-        # 設置保存相關參數
-        self.save_per_epoch = getattr(args, 'save_per_epoch', 100)  # 每隔多少個epoch保存一次
-        self.result_dir = getattr(args, 'result_dir', 'result-a2c_pendulum')
-        
-        # 創建實驗資料夾 (僅在非測試模式下)
-        self.is_test_mode = is_test
-        if not self.is_test_mode:
-            timestr = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-            self.exp_dir = os.path.join(self.result_dir, f"exp_{timestr}")
-            if not os.path.exists(self.exp_dir):
-                os.makedirs(self.exp_dir, exist_ok=True)
-            
-            # 保存配置
-            self.save_config(args)
+        self.num_episodes = args.num_episodes
+        self.memory = []
+        self.steps_on_memory = args.steps_on_memory
+        self.max_grad_norm = args.max_grad_norm
         
         # device: cpu / gpu
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -152,17 +179,10 @@ class A2CAgent:
         # networks
         obs_dim = env.observation_space.shape[0]
         action_dim = env.action_space.shape[0]
-        self.actor = Actor(
-            obs_dim, 
-            action_dim, 
-            hidden_dim1=self.actor_hidden_dim1, 
-            hidden_dim2=self.actor_hidden_dim2
-        ).to(self.device)
-        self.critic = Critic(
-            obs_dim, 
-            hidden_dim1=self.critic_hidden_dim1, 
-            hidden_dim2=self.critic_hidden_dim2
-        ).to(self.device)
+        print("obs_dim: ", obs_dim)
+        print("action_dim: ", action_dim)
+        self.actor = Actor(obs_dim, action_dim).to(self.device)
+        self.critic = Critic(obs_dim).to(self.device)
 
         # optimizer
         self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=self.actor_lr)
@@ -194,82 +214,79 @@ class A2CAgent:
         next_state, reward, terminated, truncated, _ = self.env.step(action)
         done = terminated or truncated
 
+
         if not self.is_test:
             self.transition.extend([next_state, reward, done])
+            self.memory.append(self.transition)
+            self.transition = []
 
         return next_state, reward, done
 
     def update_model(self) -> Tuple[torch.Tensor, torch.Tensor]:
         """Update the model by gradient descent."""
-        state, log_prob, next_state, reward, done = self.transition
-
+        # state, log_prob, next_state, reward, done = self.transition
+        # actions, rewards, states, next_states, dones = process_memory(self.transition, self.gamma)
+        state, log_prob, next_state, reward, done = process_memory(self.memory, self.gamma, self.device)
+        td_target = reward
         # Q_t   = r + gamma * V(s_{t+1})  if state != Terminal
         #       = r                       otherwise
-        mask = 1 - done
+        # mask = 1 - done
         
         ############TODO#############
-        # value_loss = ?
-        next_state = torch.FloatTensor(next_state).to(self.device)
-        
-        # 計算當前狀態的值函數
         value = self.critic(state)
-        
-        # 計算目標值 (TD target)
-        next_value = self.critic(next_state)
-        target = reward + self.gamma * next_value * mask
-        
-        # MSE 損失函數計算值損失
-        value_loss = F.mse_loss(value, target.detach())
+        value_loss = F.mse_loss(td_target, value)
         #############################
 
         # update value
         self.critic_optimizer.zero_grad()
-        value_loss.backward()
+        value_loss.backward(retain_graph=True)
+        clip_grad_norm_(self.critic_optimizer, self.max_grad_norm)
         self.critic_optimizer.step()
+        
+
 
         # advantage = Q_t - V(s_t)
         ############TODO#############
-        # policy_loss = ?
-        advantage = (target - value).detach()
-        
-        # 計算策略損失
-        policy_loss = -log_prob * advantage
-        
-        # 如果使用熵正則化
-        if self.entropy_weight != 0:
-            _, dist = self.actor(state)
-            entropy = dist.entropy().mean()
-            policy_loss = policy_loss - self.entropy_weight * entropy
+        advantage = td_target - value.detach()  # 確保值不再參與梯度計算
+        _, norm_dists = self.actor(state)
+        entropy = norm_dists.entropy().mean()
+        policy_loss = (-log_prob*advantage).mean() - entropy*self.entropy_weight
+
         #############################
         # update policy
         self.actor_optimizer.zero_grad()
         policy_loss.backward()
+        clip_grad_norm_(self.actor_optimizer, self.max_grad_norm)
         self.actor_optimizer.step()
 
+        # 更新後清空記憶庫
+        self.memory = []
+        
         return policy_loss.item(), value_loss.item()
 
     def train(self):
         """Train the agent."""
         self.is_test = False
         step_count = 0
-        best_score = -float('inf')
         
-        # 創建結果記錄文件
-        result_file = os.path.join(self.exp_dir, 'training_results.csv')
-        with open(result_file, 'w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow(['Episode', 'Score', 'Actor_Loss', 'Critic_Loss'])
-        
-        for ep in tqdm(range(1, int(self.num_episodes) + 1)): 
+        for ep in tqdm(range(1, self.num_episodes)): 
             actor_losses, critic_losses, scores = [], [], []
             state, _ = self.env.reset(seed=self.seed)
             score = 0
             done = False
             while not done:
-                # 移除 render 以加速訓練
-                # self.env.render()
+                # 移除渲染以提高訓練速度
+                # self.env.render()  # 註解掉這行來提高速度
                 action = self.select_action(state)
                 next_state, reward, done = self.step(action)
+                
+                # 移除這行，因為在step方法中已經添加到memory
+                # self.transition.extend([next_state, reward, done])
+                
+                if len(self.memory) < self.steps_on_memory and not done:
+                    state = next_state
+                    score += reward
+                    continue
 
                 actor_loss, critic_loss = self.update_model()
                 actor_losses.append(actor_loss)
@@ -287,173 +304,36 @@ class A2CAgent:
                 # if episode ends
                 if done:
                     scores.append(score)
-                    avg_actor_loss = np.mean(actor_losses)
-                    avg_critic_loss = np.mean(critic_losses)
-                    print(f"Episode {ep}: Total Reward = {score}")
-                    
-                    # 記錄結果
-                    with open(result_file, 'a', newline='') as f:
-                        writer = csv.writer(f)
-                        writer.writerow([ep, score, avg_actor_loss, avg_critic_loss])
-                    
+                    if ep % 100 == 0:
+                        print(f"Episode {ep}: Total Reward = {score}")
                     # W&B logging
                     wandb.log({
                         "episode": ep,
-                        "return": score,
-                        "avg_actor_loss": avg_actor_loss,
-                        "avg_critic_loss": avg_critic_loss
+                        "return": score
                         })
-                    
-                    # 保存檢查點
-                    if ep % self.save_per_epoch == 0:
-                        self.save_checkpoint(ep)
-                    
-                    # 保存最佳模型
-                    if score > best_score and not self.is_test_mode:
-                        best_score = score
-                        checkpoint = {
-                            'actor_state_dict': self.actor.state_dict(),
-                            'critic_state_dict': self.critic.state_dict(),
-                            'actor_optimizer': self.actor_optimizer.state_dict(),
-                            'critic_optimizer': self.critic_optimizer.state_dict(),
-                            'episode': ep,
-                            'score': best_score
-                        }
-                        torch.save(checkpoint, os.path.join(self.exp_dir, 'best_model.pt'))
-                        print(f"Saved best model with score {best_score} at episode {ep}")
-        
-        # 訓練結束後保存最終模型
-        if not self.is_test_mode:
-            self.save_checkpoint(int(self.num_episodes))
 
-    def load_checkpoint(self, checkpoint_path):
-        """加載模型檢查點"""
-        if not os.path.exists(checkpoint_path):
-            raise ValueError(f"Checkpoint file not found: {checkpoint_path}")
-        
-        checkpoint = torch.load(checkpoint_path, map_location=self.device)
-        
-        # 加載模型參數
-        self.actor.load_state_dict(checkpoint['actor_state_dict'])
-        self.critic.load_state_dict(checkpoint['critic_state_dict'])
-        
-        # 加載優化器參數（可選）
-        if 'actor_optimizer' in checkpoint and 'critic_optimizer' in checkpoint:
-            self.actor_optimizer.load_state_dict(checkpoint['actor_optimizer'])
-            self.critic_optimizer.load_state_dict(checkpoint['critic_optimizer'])
-            
-        episode = checkpoint.get('episode', 0)
-        score = checkpoint.get('score', None)
-        
-        print(f"Loaded checkpoint from episode {episode}" + 
-              (f" with score {score}" if score is not None else ""))
-        
-        return episode, score
-
-    def test(self, video_folder=None, checkpoint_path=None, num_episodes=1):
+    def test(self, video_folder: str):
         """Test the agent."""
         self.is_test = True
-        
-        if checkpoint_path:
-            self.load_checkpoint(checkpoint_path)
-        
-        if video_folder:
-            # 如果沒有提供視頻文件夾，創建一個
-            if not os.path.exists(video_folder):
-                os.makedirs(video_folder, exist_ok=True)
-                
-            tmp_env = self.env
-            self.env = gym.wrappers.RecordVideo(
-                self.env, 
-                video_folder=video_folder,
-                episode_trigger=lambda x: True  # 錄制所有episode
-            )
-        
-        scores = []
-        for ep in range(num_episodes):
-            state, _ = self.env.reset(seed=self.seed + ep)  # 使用不同的種子
-            done = False
-            score = 0
-            steps = 0
 
-            while not done:
-                action = self.select_action(state)
-                next_state, reward, done = self.step(action)
+        tmp_env = self.env
+        self.env = gym.wrappers.RecordVideo(self.env, video_folder=video_folder)
 
-                state = next_state
-                score += reward
-                steps += 1
+        state, _ = self.env.reset(seed=self.seed)
+        done = False
+        score = 0
 
-            scores.append(score)
-            print(f"Test Episode {ep+1}/{num_episodes}: Score = {score}, Steps = {steps}")
-        
-        # 保存結果到CSV
-        if video_folder:
-            result_file = os.path.join(video_folder, 'test_results.csv')
-            with open(result_file, 'w', newline='') as f:
-                writer = csv.writer(f)
-                writer.writerow(['Episode', 'Score'])
-                for i, score in enumerate(scores):
-                    writer.writerow([i+1, score])
-                    
-            # 保存統計摘要
-            summary_file = os.path.join(video_folder, 'test_summary.json')
-            summary = {
-                'mean_score': float(np.mean(scores)),
-                'std_score': float(np.std(scores)),
-                'min_score': float(np.min(scores)),
-                'max_score': float(np.max(scores)),
-                'median_score': float(np.median(scores)),
-                'num_episodes': num_episodes
-            }
-            with open(summary_file, 'w') as f:
-                json.dump(summary, f, indent=4)
-            
-            print(f"Test Summary: Mean Score = {summary['mean_score']:.2f} ± {summary['std_score']:.2f}")
-            
-            # 關閉記錄環境
-            self.env.close()
-            self.env = tmp_env
-        
-        return scores
+        while not done:
+            action = self.select_action(state)
+            next_state, reward, done = self.step(action)
 
-    def save_config(self, args):
-        """保存配置到 YAML 文件"""
-        if self.is_test_mode:
-            return  # 在測試模式下跳過保存配置
-            
-        config = {
-            'actor_lr': self.actor_lr,
-            'critic_lr': self.critic_lr,
-            'discount_factor': self.gamma,
-            'entropy_weight': self.entropy_weight,
-            'seed': self.seed,
-            'num_episodes': self.num_episodes,
-            'actor_hidden_dim1': self.actor_hidden_dim1,
-            'actor_hidden_dim2': self.actor_hidden_dim2,
-            'critic_hidden_dim1': self.critic_hidden_dim1,
-            'critic_hidden_dim2': self.critic_hidden_dim2,
-            'save_per_epoch': self.save_per_epoch,
-        }
-        
-        with open(os.path.join(self.exp_dir, 'config.yaml'), 'w') as f:
-            yaml.dump(config, f, default_flow_style=False)
-            
-    def save_checkpoint(self, episode):
-        """保存模型檢查點"""
-        if self.is_test_mode:
-            return  # 在測試模式下跳過保存檢查點
-            
-        checkpoint = {
-            'actor_state_dict': self.actor.state_dict(),
-            'critic_state_dict': self.critic.state_dict(),
-            'actor_optimizer': self.actor_optimizer.state_dict(),
-            'critic_optimizer': self.critic_optimizer.state_dict(),
-            'episode': episode,
-        }
-        checkpoint_path = os.path.join(self.exp_dir, f'checkpoint_ep{episode}.pt')
-        torch.save(checkpoint, checkpoint_path)
-        print(f"Saved checkpoint at episode {episode} to {checkpoint_path}")
+            state = next_state
+            score += reward
+
+        print("score: ", score)
+        self.env.close()
+
+        self.env = tmp_env
 
 def seed_torch(seed):
     torch.manual_seed(seed)
@@ -469,32 +349,20 @@ if __name__ == "__main__":
     parser.add_argument("--actor-lr", type=float, default=1e-4)
     parser.add_argument("--critic-lr", type=float, default=1e-3)
     parser.add_argument("--discount-factor", type=float, default=0.9)
-    parser.add_argument("--num-episodes", type=float, default=5000)
+    parser.add_argument("--num-episodes", type=float, default=1000)
     parser.add_argument("--seed", type=int, default=77)
-    parser.add_argument("--entropy-weight", type=float, default=1e-2) # entropy can be disabled by setting this to 0
-    
-    # 保存相關參數
-    parser.add_argument("--save-per-epoch", type=int, default=100, help="保存頻率（每多少個回合保存一次）")
-    parser.add_argument("--result-dir", type=str, default="result-a2c_pendulum", help="結果保存的基礎目錄")
-    
-    # 網絡相關參數
-    parser.add_argument("--actor-hidden-dim1", type=int, default=128)
-    parser.add_argument("--actor-hidden-dim2", type=int, default=64)
-    parser.add_argument("--critic-hidden-dim1", type=int, default=128)
-    parser.add_argument("--critic-hidden-dim2", type=int, default=64)
-    
+    parser.add_argument("--entropy-weight", type=int, default=1e-2) # entropy can be disabled by setting this to 0
+    parser.add_argument("--steps-on-memory", type=int, default=16)
+    parser.add_argument("--max-grad-norm", type=float, default=0.5)
     args = parser.parse_args()
     
     # environment
-    env = gym.make("Pendulum-v1")#, render_mode="rgb_array")
+    env = gym.make("Pendulum-v1", render_mode="rgb_array")
     seed = 77
     random.seed(seed)
     np.random.seed(seed)
     seed_torch(seed)
-    
-    # 僅在直接運行此檔案時初始化 wandb，sweep 時會由 sweep_a2c.py 初始化
-    if not wandb.run:
-        wandb.init(project="DLP-Lab7-A2C-Pendulum", name=args.wandb_run_name, save_code=True)
+    wandb.init(project="DLP-Lab7-A2C-Pendulum", name=args.wandb_run_name, save_code=True)
     
     agent = A2CAgent(env, args)
     agent.train()
